@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from summarize import generate_summary
 
 from util import get_youtube_id
 from chunker import fetch_transcript, build_chunks
@@ -24,6 +25,10 @@ app.add_middleware(
 class AskRequest(BaseModel):
   video_url:str
   question: str
+
+class SummarizeRequest(BaseModel):
+    video_url: str
+
 
 
 @app.get("/health")
@@ -74,3 +79,34 @@ def ask(request: AskRequest):
     "question": request.question,
     "answer": answer
   }
+
+@app.post("/summarize")
+def summarize(request: SummarizeRequest):
+    video_id = get_youtube_id(request.video_url)
+    
+    if video_id is None:
+        raise HTTPException(status_code=400, detail="Invalid YouTube URL")
+    
+    # Reuse cache — same chunks whether we're doing Q&A or summarizing
+    chunks_with_embeddings = load_from_cache(video_id)
+    
+    if chunks_with_embeddings is None:
+        try:
+            transcript = fetch_transcript(video_id)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Could not fetch transcript: {str(e)}")
+        
+        chunks = build_chunks(transcript)
+        chunks_with_embeddings = embed_chunks(chunks)
+        save_to_cache(video_id, chunks_with_embeddings)
+    
+    # For summarization we don't need embeddings — just the chunks
+    try:
+        summary = generate_summary(chunks_with_embeddings)
+    except ValueError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    return {
+        "video_id": video_id,
+        "summary": summary
+    }

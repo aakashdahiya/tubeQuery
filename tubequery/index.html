@@ -48,6 +48,48 @@
         min-height: 50px;
         line-height: 1.6;
       }
+
+      #summary-area {
+        margin-top: 30px;
+      }
+
+      .summary-section {
+        margin-bottom: 30px;
+      }
+
+      .summary-section h2 {
+        color: #d33;
+        margin-bottom: 10px;
+        font-size: 20px;
+      }
+
+      .concept-card {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        border-left: 3px solid #d33;
+      }
+
+      .concept-card strong {
+        display: block;
+        margin-bottom: 5px;
+        color: #222;
+      }
+
+      .timestamp {
+        color: #d33;
+        font-size: 13px;
+        font-weight: bold;
+      }
+
+      blockquote {
+        border-left: 3px solid #ccc;
+        padding-left: 15px;
+        margin: 10px 0;
+        color: #555;
+        font-style: italic;
+      }
     </style>
   </head>
   <body>
@@ -70,13 +112,88 @@
 
     <button id="ask-button">Ask</button>
 
+    <button id="summarize-button">Summarize</button>
+
+    <div id="summary-area"></div>
+
     <div id="answer"></div>
 
     <script>
+      const summarizeButton = document.getElementById("summarize-button");
+      const summaryArea = document.getElementById("summary-area");
       const videoUrl = document.getElementById("video-url");
       const question = document.getElementById("video-question");
       const button = document.getElementById("ask-button");
       const answerArea = document.getElementById("answer");
+
+      function renderSummary(summary) {
+        return `
+        <div class="summary-section">
+            <h2>Overview</h2>
+            <p>${summary.overview}</p>
+        </div>
+        
+        <div class="summary-section">
+            <h2>Key Concepts</h2>
+            ${summary.key_concepts
+              .map(
+                (c) => `
+                <div class="concept-card">
+                    <strong>${c.concept} <span class="timestamp">(${c.timestamp})</span></strong>
+                    <p>${c.explanation}</p>
+                </div>
+            `,
+              )
+              .join("")}
+        </div>
+        
+        <div class="summary-section">
+            <h2>Main Takeaways</h2>
+            <ol>
+                ${summary.main_takeaways.map((t) => `<li>${t}</li>`).join("")}
+            </ol>
+        </div>
+        
+        <div class="summary-section">
+            <h2>Notable Quotes</h2>
+            ${summary.notable_quotes
+              .map(
+                (q) => `
+                <blockquote>
+                    "${q.quote}"
+                    <div class="timestamp">— at ${q.timestamp}</div>
+                </blockquote>
+            `,
+              )
+              .join("")}
+        </div>
+    `;
+      }
+
+      summarizeButton.addEventListener("click", async () => {
+        const enteredValue = videoUrl.value;
+
+        summaryArea.innerHTML = "Generating summary...";
+
+        try {
+          const response = await fetch("http://127.0.0.1:8000/summarize", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ video_url: enteredValue }),
+          });
+
+          if (!response.ok) {
+            summaryArea.innerHTML = "Sorry, something went wrong. Try again.";
+            return;
+          }
+
+          const data = await response.json();
+          summaryArea.innerHTML = renderSummary(data.summary);
+        } catch (error) {
+          console.error(error);
+          summaryArea.innerHTML = "Something went wrong. Check console.";
+        }
+      });
 
       button.addEventListener("click", async () => {
         const enteredValue = videoUrl.value;
