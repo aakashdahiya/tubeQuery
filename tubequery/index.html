@@ -1,0 +1,110 @@
+<html>
+  <head>
+    <title>TubeQuery</title>
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        max-width: 700px;
+        margin: 40px auto;
+        padding: 20px;
+        color: #333;
+      }
+
+      h1 {
+        color: #d33;
+      }
+
+      input {
+        width: 100%;
+        padding: 10px;
+        margin: 5px 0 15px 0;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+
+      button {
+        padding: 10px 24px;
+        background: #d33;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #b22;
+      }
+
+      #answer-area {
+        margin-top: 30px;
+        padding: 20px;
+        background: #f5f5f5;
+        border-radius: 6px;
+        min-height: 50px;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>TubeQuery</h1>
+    <h3>Ask any question from your favourite youtube video</h3>
+
+    <div>
+      <label for="video-url">Enter video url</label>
+      <input
+        id="video-url"
+        type="text"
+        placeholder="https://youtube.com/watch?v=ds...."
+      />
+    </div>
+
+    <div>
+      <label for="video-question">Enter your question</label>
+      <input id="video-question" placeholder="How does it...." type="text" />
+    </div>
+
+    <button id="ask-button">Ask</button>
+
+    <div id="answer"></div>
+
+    <script>
+      const videoUrl = document.getElementById("video-url");
+      const question = document.getElementById("video-question");
+      const button = document.getElementById("ask-button");
+      const answerArea = document.getElementById("answer");
+
+      button.addEventListener("click", async () => {
+        const enteredValue = videoUrl.value;
+        const enteredQuestion = question.value;
+
+        //show loading status
+        answerArea.innerHTML = "Thinking";
+        try {
+          const response = await fetch("http://127.0.0.1:8000/ask", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              video_url: enteredValue,
+              question: enteredQuestion,
+            }),
+          });
+
+          if (!response.ok) {
+            answerArea.innerHTML = "Sorry, something went wrong. Try again.";
+            return;
+          }
+
+          const data = await response.json();
+          answerArea.innerHTML = data.answer;
+        } catch (error) {
+          answerArea.innerHTML = "Could not reach the server. Is it running?";
+        }
+      });
+    </script>
+  </body>
+</html>
