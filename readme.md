@@ -6,7 +6,9 @@ A retrieval-augmented generation (RAG) web application that answers questions ab
 
 Paste a YouTube URL, ask a question, get an answer with clickable timestamp citations. If the answer isn't in the video, TubeQuery says so honestly instead of hallucinating.
 
-![TubeQuery demo](docs/screenshot.png)
+[![TubeQuery demo]
+](https://www.youtube.com/watch?v=BX6XgWdOXwE)
+
 
 ## Features
 
